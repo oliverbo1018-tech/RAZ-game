@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>RAZ 词汇大闯关 · 小熊猫 Razzy</title>
+<style>
+  /* ===== 全局重置 ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(180deg, #FFECD2 0%, #FCB69F 100%);
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; justify-content: center; align-items: center;
+    overflow: hidden; user-select: none;
+  }
+
+  /* ===== 主容器 ===== */
+  .app {
+    width: 100%; max-width: 420px; height: 100vh; height: 100dvh;
+    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 40%, #FFF8E1 70%, #FFECB3 100%);
+    box-shadow: 0 0 40px rgba(0,0,0,0.1);
+  }
+
+  /* ===== 页面容器 ===== */
+  .page { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+
+  .page.active { display: flex; flex-direction: column; align-items: center; }
+  .page#homePage.active { justify-content: flex-start; padding-top: 10px; }
+  .page#gamePage.active { justify-content: space-between; padding: 15px; }
+  .page#resultPage.active { justify-content: center; }
+
+  /* ===================================================================
+     云朵装饰
+     =================================================================== */
+  .clouds { position: absolute; top: 0; left: 0; width: 100%; height: 120px; pointer-events: none; overflow: hidden; z-index: 1; }
+  .cloud { position: absolute; background: rgba(255,255,255,0.7); border-radius: 50px; animation: cloudMove 20s linear infinite; }
+  .cloud::before, .cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
+  .cloud1 { width: 80px; height: 28px; top: 20px; left: -100px; animation-duration: 25s; }
+  .cloud1::before { width: 40px; height: 40px; top: -18px; left: 12px; }
+  .cloud1::after { width: 28px; height: 28px; top: -12px; left: 40px; }
+  .cloud2 { width: 100px; height: 32px; top: 50px; left: -120px; animation-duration: 30s; animation-delay: 5s; }
+  .cloud2::before { width: 48px; height: 48px; top: -22px; left: 16px; }
+  .cloud2::after { width: 32px; height: 32px; top: -14px; left: 50px; }
+  .cloud3 { width: 60px; height: 22px; top: 15px; left: -80px; animation-duration: 22s; animation-delay: 10s; }
+  .cloud3::before { width: 32px; height: 32px; top: -14px; left: 10px; }
+  .cloud3::after { width: 20px; height: 20px; top: -8px; left: 32px; }
+
+  @keyframes cloudMove {
+    0% { transform: translateX(0); } 100% { transform: translateX(calc(420px + 120px)); }
+  }
+
+  /* ===================================================================
+     地面
+     =================================================================== */
+  .ground {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 65px;
+    background: linear-gradient(180deg, #81C784, #66BB6A);
+    border-radius: 30px 30px 0 0; z-index: 2;
+  }
+  .ground::before {
+    content: ''; position: absolute; top: -6px; left: 0; width: 100%; height: 12px;
+    background: repeating-linear-gradient(90deg, #A5D6A7 0px, #A5D6A7 15px, transparent 15px, transparent 25px);
+  }
+  .grass { position: absolute; bottom: 62px; z-index: 3; }
+  .grass span { display: inline-block; width: 6px; height: 18px; background: #66BB6A; border-radius: 50% 50% 0 0; margin: 0 3px; transform-origin: bottom; animation: sway 3s ease-in-out infinite; }
+  .grass span:nth-child(odd) { animation-delay: 0.5s; height: 14px; }
+  @keyframes sway { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
+
+  /* ===================================================================
+     小熊猫 Razzy 🐼
+     =================================================================== */
+  .razzy-container {
+    position: relative; z-index: 5;
+    width: 100px; height: 120px;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+  .razzy-container.home-pos { margin-top: 55px; width: 130px; height: 155px; }
+  .razzy-container.game-pos { width: 85px; height: 100px; align-self: flex-start; margin-left: 5px; margin-top: 5px; }
+  .razzy-container.result-pos { width: 140px; height: 170px; }
+
+  /* 身体 */
+  .razzy { position: relative; width: 100%; height: 100%; transition: transform 0.3s; }
+  .razzy.jump { animation: razzyJump 0.5s ease; }
+  .razzy.sad { animation: razzySad 0.6s ease; }
+  .razzy.celebrate { animation: razzyCelebrate 0.8s ease infinite; }
+  .razzy.sleep { animation: razzySleep 2s ease-in-out infinite; }
+  .razzy.idle { animation: razzyIdle 3s ease-in-out infinite; }
+
+  @keyframes razzyJump {
+    0%,100% { transform: translateY(0); }
+    30% { transform: translateY(-40px) scale(1.05); }
+    50% { transform: translateY(-50px) rotate(5deg); }
+    70% { transform: translateY(-20px); }
+  }
+  @keyframes razzySad {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px) rotate(-3deg); }
+    40% { transform: translateX(8px) rotate(3deg); }
+    60% { transform: translateX(-5px); }
+  }
+  @keyframes razzyCelebrate {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-15px) rotate(-5deg); }
+    75% { transform: translateY(-15px) rotate(5deg); }
+  }
+  @keyframes razzySleep {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(3px) rotate(-2deg); }
+  }
+  @keyframes razzyIdle {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  /* CSS 绘制小熊猫 */
+  .razzy-body {
+    position: relative; width: 80%; height: 80%; margin: 10% auto;
+  }
+  .razzy-body .head {
+    width: 70%; height: 55%; background: #FFF; border-radius: 50%;
+    position: absolute; top: 0; left: 15%; z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .razzy-body .ear-l, .razzy-body .ear-r {
+    width: 24%; height: 20%; background: #333; border-radius: 50%;
+    position: absolute; top: -5%; z-index: 1;
+  }
+  .razzy-body .ear-l { left: 12%; }
+  .razzy-body .ear-r { right: 12%; }
+  .razzy-body .eye-l, .razzy-body .eye-r {
+    width: 16%; height: 18%; background: #333; border-radius: 50%;
+    position: absolute; top: 30%; z-index: 3;
+  }
+  .razzy-body .eye-l { left: 22%; }
+  .razzy-body .eye-r { right: 22%; }
+  .razzy-body .pupil-l, .razzy-body .pupil-r {
+    width: 8%; height: 10%; background: #FFF; border-radius: 50%;
+    position: absolute; top: 33%; z-index: 4; animation: blink 4s ease-in-out infinite;
+  }
+  .razzy-body .pupil-l { left: 28%; }
+  .razzy-body .pupil-r { right: 28%; }
+
+  .razzy-body .eye-joy { width: 18%; height: 8%; background: #333; border-radius: 0 0 50% 50%; position: absolute; top: 28%; z-index: 3; display: none; }
+  .razzy-body .eye-joy.l { left: 21%; } .razzy-body .eye-joy.r { right: 21%; }
+  .razzy.happy .eye-l, .razzy.happy .eye-r { display: none; }
+  .razzy.happy .eye-joy { display: block; }
+
+  .razzy-body .nose {
+    width: 12%; height: 10%; background: #333; border-radius: 50%;
+    position: absolute; top: 42%; left: 44%; z-index: 3;
+  }
+  .razzy-body .mouth {
+    width: 30%; height: 12%; border-bottom: 2.5px solid #999; border-radius: 0 0 50% 50%;
+    position: absolute; top: 48%; left: 35%; z-index: 3;
+  }
+  .razzy.sad .mouth { border-bottom-color: transparent; border-top: 2.5px solid #999; border-radius: 50% 50% 0 0; top: 50%; }
+
+  .razzy-body .body-part {
+    width: 60%; height: 45%; background: #FFF; border-radius: 50% 50% 40% 40%;
+    position: absolute; bottom: 0; left: 20%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .razzy-body .arm-l, .razzy-body .arm-r {
+    width: 16%; height: 30%; background: #333; border-radius: 40%;
+    position: absolute; bottom: 20%; z-index: 0;
+  }
+  .razzy-body .arm-l { left: 8%; transform: rotate(10deg); }
+  .razzy-body .arm-r { right: 8%; transform: rotate(-10deg); }
+  .razzy.celebrate .arm-l { animation: waveL 0.4s ease infinite alternate; }
+  .razzy.celebrate .arm-r { animation: waveR 0.4s ease infinite alternate; }
+  @keyframes waveL { 0% { transform: rotate(10deg); } 100% { transform: rotate(-20deg); } }
+  @keyframes waveR { 0% { transform: rotate(-10deg); } 100% { transform: rotate(20deg); } }
+
+  .razzy-body .foot-l, .razzy-body .foot-r {
+    width: 22%; height: 15%; background: #333; border-radius: 50%;
+    position: absolute; bottom: -5%; z-index: 0;
+  }
+  .razzy-body .foot-l { left: 22%; }
+  .razzy-body .foot-r { right: 22%; }
+
+  .razzy.happy .mouth { border-bottom: 3px solid #E8739A; border-radius: 0 0 50% 50%; height: 14%; top: 46%; }
+
+  @keyframes blink {
+    0%,96%,100% { height: 10%; top: 33%; }
+    97%,99% { height: 2%; top: 36%; }
+  }
+
+  /* 对话气泡 */
+  .speech-bubble {
+    position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,0.9); padding: 6px 14px;
+    border-radius: 16px; font-size: 12px; color: #555;
+    white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 10; pointer-events: none;
+  }
+  .speech-bubble.show { opacity: 1; }
+  .speech-bubble::after {
+    content: ''; position: absolute; bottom: -6px; left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent; border-right: 6px solid transparent;
+    border-top: 6px solid rgba(255,255,255,0.9);
+  }
+
+  /* ===================================================================
+     首页
+     =================================================================== */
+  #homePage { z-index: 10; }
+  #homePage .title-area { text-align: center; margin-top: 10px; z-index: 5; }
+  #homePage .title-area h1 {
+    font-size: 26px; color: #D84315;
+    text-shadow: 2px 2px 0 #FFCCBC;
+    letter-spacing: 2px;
+  }
+  #homePage .title-area p {
+    font-size: 12px; color: #8D6E63;
+    margin-top: 2px;
+  }
+
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 12px;
+    z-index: 5;
+    position: relative;
+  }
+  .level-btn {
+    padding: 12px 6px;
+    border: none;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.85);
+    color: #5D4037;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    text-align: center;
+    backdrop-filter: blur(4px);
+  }
+  .level-btn:active { transform: scale(0.92); }
+  .level-btn.locked {
+    opacity: 0.4;
+    background: rgba(200,200,200,0.5);
+    cursor: not-allowed;
+  }
+  .level-btn.current {
+    background: linear-gradient(135deg, #FF8A65, #FF7043);
+    color: #FFF;
+    box-shadow: 0 4px 12px rgba(255,112,67,0.3);
+  }
+  .level-btn.completed {
+    background: linear-gradient(135deg, #81C784, #66BB6A);
+    color: #FFF;
+  }
+  .level-btn .level-label { font-size: 13px; }
+  .level-btn .level-sub { font-size: 9px; opacity: 0.7; font-weight: normal; }
+
+  .start-btn-area {
+    margin-top: 14px;
+    position: relative;
+    z-index: 5;
+  }
+  .start-btn {
+    padding: 14px 50px;
+    border: none;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #FF8A65, #FF5722);
+    color: #FFF;
+    font-size: 20px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(255,87,34,0.3);
+    transition: all 0.2s;
+    letter-spacing: 2px;
+  }
+  .start-btn:active { transform: scale(0.95); }
+
+  .daily-info {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    z-index: 6;
+    background: rgba(255,255,255,0.8);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: #8D6E63;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ===================================================================
+     游戏页
+     =================================================================== */
+  #gamePage { z-index: 20; }
+  .game-header {
+    width: 100%;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 5; position: relative;
+  }
+  .game-score {
+    font-size: 18px; font-weight: bold; color: #E65100;
+    background: rgba(255,255,255,0.8); padding: 4px 14px;
+    border-radius: 20px; backdrop-filter: blur(4px);
+  }
+  .game-progress {
+    font-size: 13px; color: #8D6E63;
+    background: rgba(255,255,255,0.8); padding: 4px 14px;
+    border-radius: 20px; backdrop-filter: blur(4px);
+  }
+  .progress-bar {
+    width: 100%; height: 6px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 3px; margin-top: 4px;
+    overflow: hidden; z-index: 5; position: relative;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, #66BB6A, #43A047);
+    border-radius: 3px; transition: width 0.5s ease;
+  }
+
+  /* 听音区域 */
+  .listen-area {
+    text-align: center;
+    z-index: 5; position: relative;
+  }
+  .listen-btn {
+    width: 70px; height: 70px;
+    border: none; border-radius: 50%;
+    background: linear-gradient(135deg, #42A5F5, #1E88E5);
+    color: #FFF; font-size: 32px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(33,150,243,0.3);
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto;
+  }
+  .listen-btn:active { transform: scale(0.9); }
+  .listen-btn.playing { animation: pulse 0.5s ease infinite; }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(33,150,243,0.4); }
+    50% { box-shadow: 0 0 0 15px rgba(33,150,243,0); }
+  }
+  .listen-label {
+    font-size: 13px; color: #5D4037;
+    margin-top: 6px; font-weight: bold;
+  }
+
+  /* 单词显示 */
+  .word-display {
+    font-size: 28px; font-weight: bold;
+    color: #4E342E; letter-spacing: 2px;
+    height: 36px; line-height: 36px;
+    transition: all 0.3s;
+    z-index: 5; position: relative;
+  }
+
+  /* 图片选项 */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    max-width: 340px;
+    z-index: 5;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .option-card {
+    aspect-ratio: 1 / 1;
+    border: 3px solid transparent;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    backdrop-filter: blur(4px);
+    padding: 8px;
+  }
+  .option-card:active { transform: scale(0.93); }
+  .option-card .emoji { font-size: 48px; line-height: 1; margin-bottom: 4px; }
+  .option-card .hint { font-size: 11px; color: #999; }
+  .option-card.selected {
+    border-color: #42A5F5;
+    box-shadow: 0 0 0 3px rgba(66,165,245,0.2);
+  }
+  .option-card.correct {
+    border-color: #66BB6A;
+    background: rgba(200,230,200,0.8);
+    animation: cardCorrect 0.5s ease;
+  }
+  .option-card.wrong {
+    border-color: #EF5350;
+    background: rgba(255,205,210,0.8);
+    animation: shake 0.4s ease;
+  }
+  .option-card.disabled { pointer-events: none; opacity: 0.7; }
+
+  @keyframes cardCorrect {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+
+  /* 小星星掉落特效 */
+  .star-burst {
+    position: fixed; pointer-events: none; z-index: 100;
+    font-size: 24px; animation: starFall 1s ease-out forwards;
+  }
+  @keyframes starFall {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(-80px) translateX(30px) rotate(180deg) scale(0.3); opacity: 0; }
+  }
+
+  /* ===================================================================
+     结果页
+     =================================================================== */
+  #resultPage { z-index: 30; }
+  .result-box {
+    background: rgba(255,255,255,0.9);
+    border-radius: 30px;
+    padding: 30px 28px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    z-index: 5; position: relative;
+    max-width: 320px; width: 90%;
+    animation: popIn 0.5s ease;
+  }
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .result-box h2 { font-size: 22px; color: #E65100; margin-bottom: 4px; }
+  .result-stars { font-size: 36px; margin: 8px 0; letter-spacing: 6px; }
+  .result-score { font-size: 40px; font-weight: bold; color: #4E342E; }
+  .result-score span { font-size: 16px; color: #999; }
+  .result-msg { font-size: 14px; color: #8D6E63; margin: 6px 0 16px; }
+
+  .result-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .result-btns button {
+    padding: 10px 28px;
+    border: none;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .result-btns button:active { transform: scale(0.93); }
+  .btn-retry { background: #E0E0E0; color: #555; }
+  .btn-next { background: linear-gradient(135deg, #FF8A65, #FF5722); color: #FFF; box-shadow: 0 4px 12px rgba(255,87,34,0.2); }
+  .btn-home { background: #E0E0E0; color: #555; font-size: 13px; padding: 10px 20px; }
+
+  /* 错误题复习 */
+  .wrong-words {
+    margin-top: 12px; padding: 8px; background: rgba(255,235,238,0.6);
+    border-radius: 12px; max-height: 80px; overflow-y: auto;
+  }
+  .wrong-words h4 { font-size: 11px; color: #E53935; margin-bottom: 4px; }
+  .wrong-words .word-tag {
+    display: inline-block; padding: 2px 8px; margin: 2px;
+    background: #FFCDD2; border-radius: 8px;
+    font-size: 11px; color: #C62828;
+  }
+
+  /* 五彩纸屑 */
+  .confetti-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 50; overflow: hidden;
+  }
+  .confetti {
+    position: absolute; width: 8px; height: 8px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ===================================================================
+     学习报告入口（首页小角）
+     =================================================================== */
+  .report-btn {
+    position: absolute; bottom: 72px; right: 12px;
+    z-index: 6;
+    background: rgba(255,255,255,0.8);
+    border: none; border-radius: 50%;
+    width: 44px; height: 44px;
+    font-size: 20px; cursor: pointer;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ===== 云朵 ===== -->
+  <div class="clouds">
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+    <div class="cloud cloud3"></div>
+  </div>
+
+  <!-- ===== 首页 ===== -->
+  <div class="page active" id="homePage">
+    <div class="daily-info" id="dailyInfo">📅 今日已完成 0 关</div>
+
+    <div class="title-area">
+      <h1>📚 RAZ 大闯关</h1>
+      <p>和小熊猫 Razzy 一起学单词 🐼</p>
+    </div>
+
+    <!-- Razzy -->
+    <div class="razzy-container home-pos" id="razzyHome" style="z-index:5;">
+      <div class="razzy idle" id="razzyHomeInner">
+        <div class="speech-bubble" id="homeBubble">今天来闯关吧！🌟</div>
+        <div class="razzy-body">
+          <div class="ear-l"></div><div class="ear-r"></div>
+          <div class="head">
+            <div class="eye-l"></div><div class="eye-r"></div>
+            <div class="pupil-l"></div><div class="pupil-r"></div>
+            <div class="eye-joy l"></div><div class="eye-joy r"></div>
+            <div class="nose"></div>
+            <div class="mouth"></div>
+          </div>
+          <div class="body-part">
+            <div class="arm-l"></div><div class="arm-r"></div>
+            <div class="foot-l"></div><div class="foot-r"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 级别选择 -->
+    <div class="level-grid" id="levelGrid"></div>
+
+    <!-- 开始按钮 -->
+    <div class="start-btn-area">
+      <button class="start-btn" id="btnStartGame">🚀 开始闯关</button>
+    </div>
+
+    <button class="report-btn" id="btnReport">📊</button>
+    <div class="ground" style="z-index:3;"></div>
+  </div>
+
+  <!-- ===== 游戏页 ===== -->
+  <div class="page" id="gamePage">
+    <!-- 顶部信息 -->
+    <div class="game-header" style="z-index:5;position:relative;">
+      <div class="game-score">⭐ <span id="gameScore">0</span></div>
+      <div class="game-progress"><span id="gameProgress">1</span>/<span id="gameTotal">10</span></div>
+    </div>
+    <div class="progress-bar" style="z-index:5;position:relative;">
+      <div class="progress-fill" id="progressFill" style="width:10%"></div>
+    </div>
+
+    <!-- Razzy 小版 -->
+    <div class="razzy-container game-pos" id="razzyGame" style="z-index:5;align-self:flex-start;">
+      <div class="razzy idle" id="razzyGameInner">
+        <div class="speech-bubble" id="gameBubble">听一听，选一选！🔊</div>
+        <div class="razzy-body" style="transform:scale(0.7);transform-origin:top center;">
+          <div class="ear-l"></div><div class="ear-r"></div>
+          <div class="head">
+            <div class="eye-l"></div><div class="eye-r"></div>
+            <div class="pupil-l"></div><div class="pupil-r"></div>
+            <div class="eye-joy l"></div><div class="eye-joy r"></div>
+            <div class="nose"></div>
+            <div class="mouth"></div>
+          </div>
+          <div class="body-part" style="height:30%;">
+            <div class="arm-l"></div><div class="arm-r"></div>
+            <div class="foot-l"></div><div class="foot-r"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 听音 -->
+    <div class="listen-area" style="z-index:5;position:relative;">
+      <button class="listen-btn" id="btnListen">🔊</button>
+      <div class="listen-label">点击听读音 👆</div>
+    </div>
+
+    <!-- 单词 -->
+    <div class="word-display" id="wordDisplay"></div>
+
+    <!-- 选项 -->
+    <div class="options-grid" id="optionsGrid"></div>
+    <div class="ground" style="z-index:3;"></div>
+  </div>
+
+  <!-- ===== 结果页 ===== -->
+  <div class="page" id="resultPage">
+    <div class="razzy-container result-pos" id="razzyResult" style="z-index:5;">
+      <div class="razzy idle" id="razzyResultInner">
+        <div class="speech-bubble" id="resultBubble">太棒啦！🎉</div>
+        <div class="razzy-body" style="transform:scale(1);">
+          <div class="ear-l"></div><div class="ear-r"></div>
+          <div class="head">
+            <div class="eye-l"></div><div class="eye-r"></div>
+            <div class="pupil-l"></div><div class="pupil-r"></div>
+            <div class="eye-joy l"></div><div class="eye-joy r"></div>
+            <div class="nose"></div>
+            <div class="mouth"></div>
+          </div>
+          <div class="body-part">
+            <div class="arm-l"></div><div class="arm-r"></div>
+            <div class="foot-l"></div><div class="foot-r"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <h2 id="resultTitle">🎉 闯关成功！</h2>
+      <div class="result-stars" id="resultStars">⭐⭐⭐</div>
+      <div class="result-score"><span id="resultScore">100</span> <span>分</span></div>
+      <div class="result-msg" id="resultMsg">太厉害了！全部答对！</div>
+      <div class="wrong-words" id="wrongWords" style="display:none;"></div>
+      <div class="result-btns">
+        <button class="btn-home" id="btnHome">🏠 首页</button>
+        <button class="btn-retry" id="btnRetry">🔄 再来一次</button>
+        <button class="btn-next" id="btnNext">▶ 下一关</button>
+      </div>
+    </div>
+    <div class="confetti-container" id="confettiBox"></div>
+    <div class="ground" style="z-index:3;"></div>
+  </div>
+
+</div>
+
+<script>
+// ===================================================================
+// 1. RAZ 词汇数据（按级别）
+// ===================================================================
+const RAZ_DATA = {
+  "AA": [
+    { word: "apple", emoji: "🍎", cn: "苹果" },
+    { word: "baby", emoji: "👶", cn: "宝宝" },
+    { word: "cat", emoji: "🐱", cn: "猫" },
+    { word: "dog", emoji: "🐶", cn: "狗" },
+    { word: "egg", emoji: "🥚", cn: "鸡蛋" },
+    { word: "fish", emoji: "🐟", cn: "鱼" },
+    { word: "girl", emoji: "👧", cn: "女孩" },
+    { word: "hat", emoji: "🎩", cn: "帽子" },
+    { word: "ice", emoji: "🧊", cn: "冰" },
+    { word: "juice", emoji: "🧃", cn: "果汁" },
+    { word: "kite", emoji: "🪁", cn: "风筝" },
+    { word: "lion", emoji: "🦁", cn: "狮子" },
+    { word: "milk", emoji: "🥛", cn: "牛奶" },
+    { word: "nose", emoji: "👃", cn: "鼻子" },
+    { word: "orange", emoji: "🍊", cn: "橙子" },
+    { word: "pig", emoji: "🐷", cn: "猪" },
+    { word: "queen", emoji: "👑", cn: "女王" },
+    { word: "rabbit", emoji: "🐰", cn: "兔子" },
+    { word: "sun", emoji: "☀️", cn: "太阳" },
+    { word: "tree", emoji: "🌳", cn: "树" },
+    { word: "umbrella", emoji: "☂️", cn: "雨伞" },
+    { word: "van", emoji: "🚐", cn: "面包车" },
+    { word: "water", emoji: "💧", cn: "水" },
+    { word: "box", emoji: "📦", cn: "盒子" },
+    { word: "yellow", emoji: "💛", cn: "黄色" },
+    { word: "zoo", emoji: "🏛️", cn: "动物园" },
+    { word: "bed", emoji: "🛏️", cn: "床" },
+    { word: "cup", emoji: "🥤", cn: "杯子" },
+    { word: "duck", emoji: "🦆", cn: "鸭子" },
+    { word: "ball", emoji: "⚽", cn: "球" },
+  ],
+  "A": [
+    { word: "big", emoji: "🐘", cn: "大的" },
+    { word: "little", emoji: "🐭", cn: "小的" },
+    { word: "red", emoji: "🔴", cn: "红色" },
+    { word: "blue", emoji: "🔵", cn: "蓝色" },
+    { word: "green", emoji: "🟢", cn: "绿色" },
+    { word: "happy", emoji: "😊", cn: "开心的" },
+    { word: "sad", emoji: "😢", cn: "难过的" },
+    { word: "up", emoji: "⬆️", cn: "向上" },
+    { word: "down", emoji: "⬇️", cn: "向下" },
+    { word: "hot", emoji: "🔥", cn: "热的" },
+    { word: "cold", emoji: "❄️", cn: "冷的" },
+    { word: "eat", emoji: "🍽️", cn: "吃" },
+    { word: "drink", emoji: "🥤", cn: "喝" },
+    { word: "run", emoji: "🏃", cn: "跑" },
+    { word: "jump", emoji: "🤸", cn: "跳" },
+    { word: "sleep", emoji: "😴", cn: "睡觉" },
+    { word: "read", emoji: "📖", cn: "阅读" },
+    { word: "draw", emoji: "✏️", cn: "画画" },
+    { word: "play", emoji: "🎮", cn: "玩" },
+    { word: "sing", emoji: "🎤", cn: "唱歌" },
+    { word: "dance", emoji: "💃", cn: "跳舞" },
+    { word: "swim", emoji: "🏊", cn: "游泳" },
+    { word: "fly", emoji: "✈️", cn: "飞" },
+    { word: "walk", emoji: "🚶", cn: "走" },
+    { word: "sit", emoji: "🪑", cn: "坐" },
+  ],
+  "B": [
+    { word: "brother", emoji: "👦", cn: "兄弟" },
+    { word: "sister", emoji: "👧", cn: "姐妹" },
+    { word: "father", emoji: "👨", cn: "爸爸" },
+    { word: "mother", emoji: "👩", cn: "妈妈" },
+    { word: "garden", emoji: "🌻", cn: "花园" },
+    { word: "kitchen", emoji: "🍳", cn: "厨房" },
+    { word: "bedroom", emoji: "🛌", cn: "卧室" },
+    { word: "window", emoji: "🪟", cn: "窗户" },
+    { word: "table", emoji: "🪑", cn: "桌子" },
+    { word: "chair", emoji: "🪑", cn: "椅子" },
+    { word: "book", emoji: "📕", cn: "书" },
+    { word: "toy", emoji: "🧸", cn: "玩具" },
+    { word: "doll", emoji: "🎎", cn: "洋娃娃" },
+    { word: "car", emoji: "🚗", cn: "汽车" },
+    { word: "train", emoji: "🚂", cn: "火车" },
+    { word: "plane", emoji: "✈️", cn: "飞机" },
+    { word: "boat", emoji: "🚢", cn: "船" },
+    { word: "rain", emoji: "🌧️", cn: "雨" },
+    { word: "snow", emoji: "❄️", cn: "雪" },
+    { word: "wind", emoji: "💨", cn: "风" },
+    { word: "cloud", emoji: "☁️", cn: "云" },
+    { word: "star", emoji: "⭐", cn: "星星" },
+    { word: "moon", emoji: "🌙", cn: "月亮" },
+    { word: "house", emoji: "🏠", cn: "房子" },
+    { word: "school", emoji: "🏫", cn: "学校" },
+  ],
+  "C": [
+    { word: "breakfast", emoji: "🥞", cn: "早餐" },
+    { word: "lunch", emoji: "🍱", cn: "午餐" },
+    { word: "dinner", emoji: "🍝", cn: "晚餐" },
+    { word: "banana", emoji: "🍌", cn: "香蕉" },
+    { word: "bread", emoji: "🍞", cn: "面包" },
+    { word: "cheese", emoji: "🧀", cn: "奶酪" },
+    { word: "morning", emoji: "🌅", cn: "早上" },
+    { word: "afternoon", emoji: "☀️", cn: "下午" },
+    { word: "evening", emoji: "🌆", cn: "傍晚" },
+    { word: "spring", emoji: "🌸", cn: "春天" },
+    { word: "summer", emoji: "🏖️", cn: "夏天" },
+    { word: "autumn", emoji: "🍂", cn: "秋天" },
+    { word: "winter", emoji: "⛄", cn: "冬天" },
+    { word: "birthday", emoji: "🎂", cn: "生日" },
+    { word: "party", emoji: "🎉", cn: "派对" },
+    { word: "candle", emoji: "🕯️", cn: "蜡烛" },
+    { word: "pencil", emoji: "✏️", cn: "铅笔" },
+    { word: "ruler", emoji: "📏", cn: "尺子" },
+    { word: "eraser", emoji: "🧹", cn: "橡皮" },
+    { word: "teacher", emoji: "👩‍🏫", cn: "老师" },
+    { word: "student", emoji: "🧑‍🎓", cn: "学生" },
+    { word: "friend", emoji: "🤝", cn: "朋友" },
+    { word: "family", emoji: "👨‍👩‍👧‍👦", cn: "家庭" },
+    { word: "garden", emoji: "🌷", cn: "花园" },
+    { word: "animal", emoji: "🐾", cn: "动物" },
+  ]
+};
+
+const LEVELS = Object.keys(RAZ_DATA);
+
+// ===================================================================
+// 2. 游戏状态
+// ===================================================================
+let state = {
+  currentLevel: 'AA',
+  currentIndex: 0,
+  totalQuestions: 10,
+  score: 0,
+  questions: [],
+  wrongWords: [],
+  isAnswered: false,
+  isPlaying: false,
+  progress: {},
+};
+
+// ===================================================================
+// 3. DOM
+// ===================================================================
+const $ = id => document.getElementById(id);
+const pages = {
+  home: $('homePage'),
+  game: $('gamePage'),
+  result: $('resultPage'),
+};
+
+function showPage(name) {
+  Object.values(pages).forEach(p => p.classList.remove('active'));
+  pages[name].classList.add('active');
+}
+
+// ===================================================================
+// 4. TTS 语音
+// ===================================================================
+function speakWord(word, callback) {
+  if (!window.speechSynthesis) {
+    if (callback) callback();
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.lang = 'en-US';
+  utter.rate = 0.75;
+  utter.pitch = 1.1;
+  if (callback) utter.onend = callback;
+  window.speechSynthesis.speak(utter);
+}
+
+// ===================================================================
+// 5. 工具函数
+// ===================================================================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getLevelWords(level) {
+  return RAZ_DATA[level] || RAZ_DATA['AA'];
+}
+
+function loadProgress() {
+  try {
+    const saved = localStorage.getItem('raz_progress');
+    if (saved) state.progress = JSON.parse(saved);
+  } catch (e) { state.progress = {}; }
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem('raz_progress', JSON.stringify(state.progress));
+  } catch (e) {}
+}
+
+function getStars(score, total) {
+  const pct = score / (total * 10);
+  if (pct >= 0.9) return 3;
+  if (pct >= 0.7) return 2;
+  if (pct >= 0.4) return 1;
+  return 0;
+}
+
+// ===================================================================
+// 6. Razzy 动画
+// ===================================================================
+let razzyTimeout = null;
+
+function razzyAction(containerId, action, text) {
+  const inner = $(containerId);
+  if (!inner) return;
+  inner.className = 'razzy ' + action;
+  const bubble = inner.querySelector('.speech-bubble');
+  if (bubble && text) {
+    bubble.textContent = text;
+    bubble.classList.add('show');
+    clearTimeout(razzyTimeout);
+    razzyTimeout = setTimeout(() => bubble.classList.remove('show'), 2500);
+  }
+  if (action === 'jump' || action === 'celebrate') {
+    setTimeout(() => {
+      if (inner.classList.contains(action)) {
+        inner.className = 'razzy idle';
+      }
+    }, 1500);
+  }
+  if (action === 'sad') {
+    setTimeout(() => {
+      if (inner.classList.contains('sad')) {
+        inner.className = 'razzy idle';
+      }
+    }, 1200);
+  }
+}
+
+// ===================================================================
+// 7. 首页
+// ===================================================================
+function renderHome() {
+  loadProgress();
+  const grid = $('levelGrid');
+  grid.innerHTML = '';
+  let latestUnlocked = 'AA';
+  let allCompleted = true;
+
+  LEVELS.forEach((lv, i) => {
+    const p = state.progress[lv];
+    const btn = document.createElement('button');
+    btn.className = 'level-btn';
+    btn.dataset.level = lv;
+
+    if (i === 0) {
+      btn.classList.add('current');
+      latestUnlocked = lv;
+    } else if (p && p.completed) {
+      btn.classList.add('completed');
+    } else {
+      const prev = LEVELS[i - 1];
+      const prevP = state.progress[prev];
+      if (prevP && prevP.completed) {
+        btn.classList.add('current');
+        latestUnlocked = lv;
+        allCompleted = false;
+      } else {
+        btn.classList.add('locked');
+      }
+    }
+
+    if (p && p.completed) {
+      btn.innerHTML = `<div class="level-label">${lv}</div><div class="level-sub">✅ ${p.score||0}分</div>`;
+    } else if (btn.classList.contains('locked')) {
+      btn.innerHTML = `<div class="level-label">${lv}</div><div class="level-sub">🔒 未解锁</div>`;
+    } else {
+      btn.innerHTML = `<div class="level-label">${lv}</div><div class="level-sub">▶ 可挑战</div>`;
+    }
+
+    btn.addEventListener('click', () => {
+      if (!btn.classList.contains('locked')) {
+        state.currentLevel = lv;
+        document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('current'));
+        btn.classList.add('current');
+      }
+    });
+
+    grid.appendChild(btn);
+  });
+
+  // 每日完成关卡数
+  const today = new Date().toDateString();
+  const todayCount = Object.keys(state.progress).filter(k => {
+    const p = state.progress[k];
+    return p && p.completed && p.date === today;
+  }).length;
+  $('dailyInfo').textContent = `📅 今日完成 ${todayCount} 关`;
+
+  // Razzy 打招呼
+  setTimeout(() => {
+    const msgs = [
+      '今天来闯关吧！🌟',
+      '选一个级别开始吧 📚',
+      '我准备好啦！🐼',
+      'RAZ 单词真好玩！✨'
+    ];
+    razzyAction('razzyHomeInner', 'idle', msgs[Math.floor(Math.random() * msgs.length)]);
+  }, 500);
+}
+
+// ===================================================================
+// 8. 游戏逻辑
+// ===================================================================
+function generateQuestions(level, count) {
+  const words = getLevelWords(level);
+  const shuffled = shuffle([...words]);
+  const selected = shuffled.slice(0, Math.min(count, words.length));
+  const allWords = shuffle([...words]);
+
+  return selected.map(target => {
+    // 选3个干扰项（不同单词）
+    let distractors = allWords.filter(w => w.word !== target.word);
+    distractors = shuffle(distractors).slice(0, 3);
+    const options = shuffle([target, ...distractors]);
+    return {
+      target,
+      options,
+      answered: false,
+    };
+  });
+}
+
+function startGame() {
+  state.score = 0;
+  state.currentIndex = 0;
+  state.wrongWords = [];
+  state.totalQuestions = 10;
+  state.isPlaying = true;
+  state.isAnswered = false;
+
+  const words = getLevelWords(state.currentLevel);
+  const qCount = Math.min(10, words.length);
+  state.totalQuestions = qCount;
+  state.questions = generateQuestions(state.currentLevel, qCount);
+
+  showPage('game');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = state.questions[state.currentIndex];
+  if (!q) { endGame(); return; }
+
+  state.isAnswered = false;
+  $('gameScore').textContent = state.score;
+  $('gameProgress').textContent = state.currentIndex + 1;
+  $('gameTotal').textContent = state.totalQuestions;
+  $('progressFill').style.width = `${((state.currentIndex) / state.totalQuestions) * 100}%`;
+  $('wordDisplay').textContent = '';
+
+  // 选项渲染
+  const grid = $('optionsGrid');
+  grid.innerHTML = '';
+  q.options.forEach((opt) => {
+    const card = document.createElement('div');
+    card.className = 'option-card';
+    card.innerHTML = `<div class="emoji">${opt.emoji}</div><div class="hint">${opt.cn}</div>`;
+    card.dataset.word = opt.word;
+    card.addEventListener('click', () => handleAnswer(opt.word, card));
+    grid.appendChild(card);
+  });
+
+  // Razzy 提示
+  razzyAction('razzyGameInner', 'idle', '🔊 先听读音，再选图片！');
+
+  // 自动播放读音
+  setTimeout(() => {
+    speakWord(q.target.word);
+    $('wordDisplay').textContent = '🔊 ' + q.target.word;
+    setTimeout(() => {
+      $('wordDisplay').textContent = '';
+    }, 1500);
+  }, 400);
+
+  q.answered = true;
+}
+
+function handleAnswer(selectedWord, card) {
+  if (state.isAnswered) return;
+  const q = state.questions[state.currentIndex];
+  if (!q) return;
+
+  state.isAnswered = true;
+  const allCards = $('optionsGrid').querySelectorAll('.option-card');
+  allCards.forEach(c => c.classList.add('disabled'));
+
+  const isCorrect = selectedWord === q.target.word;
+  const correctCard = $('optionsGrid').querySelector(`[data-word="${q.target.word}"]`);
+
+  if (isCorrect) {
+    card.classList.add('correct');
+    state.score += 10;
+    $('gameScore').textContent = state.score;
+    razzyAction('razzyGameInner', 'jump', '🎉 答对啦！太棒了！');
+    createStarBurst(card);
+  } else {
+    card.classList.add('wrong');
+    if (correctCard) correctCard.classList.add('correct');
+    state.wrongWords.push(q.target.word);
+    razzyAction('razzyGameInner', 'sad', '😅 再听一次这个单词～');
+    // 再读一次
+    setTimeout(() => speakWord(q.target.word), 500);
+  }
+
+  setTimeout(() => {
+    state.currentIndex++;
+    if (state.currentIndex >= state.totalQuestions) {
+      endGame();
+    } else {
+      renderQuestion();
+    }
+  }, isCorrect ? 1200 : 2500);
+}
+
+function createStarBurst(card) {
+  const rect = card.getBoundingClientRect();
+  for (let i = 0; i < 6; i++) {
+    const star = document.createElement('div');
+    star.className = 'star-burst';
+    star.textContent = ['⭐','🌟','✨','💫'][Math.floor(Math.random()*4)];
+    star.style.left = (rect.left + rect.width/2 + (Math.random()-0.5)*60) + 'px';
+    star.style.top = (rect.top + rect.height/2) + 'px';
+    star.style.animationDelay = (i * 0.08) + 's';
+    document.body.appendChild(star);
+    setTimeout(() => star.remove(), 1200);
+  }
+}
+
+// ===================================================================
+// 9. 结果页
+// ===================================================================
+function endGame() {
+  state.isPlaying = false;
+  const total = state.totalQuestions;
+  const score = state.score;
+  const stars = getStars(score, total);
+  const maxScore = total * 10;
+  const correctCount = total - state.wrongWords.length;
+
+  // 保存进度
+  loadProgress();
+  state.progress[state.currentLevel] = {
+    completed: true,
+    score: score,
+    stars: stars,
+    date: new Date().toDateString(),
+    wrongWords: [...state.wrongWords],
+  };
+  saveProgress();
+
+  showPage('result');
+
+  $('resultScore').textContent = score;
+
+  let starStr = '';
+  for (let i = 0; i < 3; i++) {
+    starStr += i < stars ? '⭐' : '☆';
+  }
+  $('resultStars').textContent = starStr;
+
+  let msgs = [
+    ['继续加油哦！💪', '下次一定能更好！🌟'],
+    ['不错不错！👍', '已经很棒啦！'],
+    ['太厉害了！🎉', '你是单词小达人！'],
+    ['完美通关！🏆', '全部答对，太酷了！'],
+  ];
+  const msgIdx = Math.min(stars, 3);
+  const msg = msgs[msgIdx][Math.floor(Math.random() * msgs[msgIdx].length)];
+  $('resultMsg').textContent = `${correctCount}/${total} 题正确，${msg}`;
+
+  // 错题复习
+  const wrongDiv = $('wrongWords');
+  if (state.wrongWords.length > 0) {
+    wrongDiv.style.display = 'block';
+    wrongDiv.innerHTML = '<h4>📝 需要复习的单词：</h4>';
+    state.wrongWords.forEach(w => {
+      wrongDiv.innerHTML += `<span class="word-tag">${w}</span>`;
+    });
+  } else {
+    wrongDiv.style.display = 'none';
+  }
+
+  // Razzy 反馈
+  if (stars >= 3) {
+    razzyAction('razzyResultInner', 'celebrate', '🏆 完美通关！你是最棒的！');
+    showConfetti();
+  } else if (stars >= 2) {
+    razzyAction('razzyResultInner', 'jump', '👏 很棒！继续加油！');
+  } else {
+    razzyAction('razzyResultInner', 'idle', '💪 没关系，再试一次！');
+  }
+
+  // 按钮
+  const levelIdx = LEVELS.indexOf(state.currentLevel);
+  const nextLevel = levelIdx < LEVELS.length - 1 ? LEVELS[levelIdx + 1] : null;
+  const nextBtn = $('btnNext');
+  if (nextLevel && stars >= 1) {
+    nextBtn.style.display = 'inline-block';
+    nextBtn.textContent = `▶ 下一关 ${nextLevel}`;
+  } else {
+    nextBtn.style.display = 'none';
+  }
+}
+
+function showConfetti() {
+  const box = $('confettiBox');
+  box.innerHTML = '';
+  const colors = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF6B9D','#C084FC'];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.width = (4 + Math.random() * 6) + 'px';
+    c.style.height = (4 + Math.random() * 6) + 'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+    c.style.animationDuration = (2 + Math.random() * 2) + 's';
+    c.style.animationDelay = Math.random() * 2 + 's';
+    box.appendChild(c);
+  }
+  setTimeout(() => box.innerHTML = '', 6000);
+}
+
+// ===================================================================
+// 10. 事件绑定
+// ===================================================================
+$('btnStartGame').addEventListener('click', startGame);
+
+$('btnListen').addEventListener('click', () => {
+  const q = state.questions[state.currentIndex];
+  if (q && state.isPlaying) {
+    $('btnListen').classList.add('playing');
+    speakWord(q.target.word, () => {
+      $('btnListen').classList.remove('playing');
+    });
+  }
+});
+
+$('btnHome').addEventListener('click', () => {
+  showPage('home');
+  renderHome();
+});
+
+$('btnRetry').addEventListener('click', startGame);
+
+$('btnNext').addEventListener('click', () => {
+  const levelIdx = LEVELS.indexOf(state.currentLevel);
+  if (levelIdx < LEVELS.length - 1) {
+    state.currentLevel = LEVELS[levelIdx + 1];
+    startGame();
+  }
+});
+
+$('btnReport').addEventListener('click', () => {
+  loadProgress();
+  const completed = Object.keys(state.progress).filter(k => state.progress[k].completed);
+  let msg = '📊 学习报告\n';
+  msg += `已闯关数：${completed.length}/${LEVELS.length}\n\n`;
+  completed.forEach(k => {
+    const p = state.progress[k];
+    msg += `${k}: ${p.score}分 ${'⭐'.repeat(p.stars||0)}\n`;
+  });
+  if (completed.length === 0) msg += '还没有闯关记录，快去学习吧！🚀\n';
+  alert(msg);
+});
+
+// ===================================================================
+// 11. 初始化
+// ===================================================================
+renderHome();
+</script>
+</body>
+</html>
